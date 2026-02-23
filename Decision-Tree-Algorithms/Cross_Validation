@@ -1,0 +1,50 @@
+from sklearn.datasets import load_iris, load_breast_cancer
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import LeaveOneOut, KFold, StratifiedKFold, cross_val_score
+import numpy as np
+
+datasets = {
+    "Iris": load_iris(return_X_y=True),
+    "Breast Cancer": load_breast_cancer(return_X_y=True)
+}
+
+# Hyperparameter values for Decision Tree
+depth_values = [2, 3, 4, 5, 6]
+
+def evaluate_cv(X, y, cv, name):
+    results = []
+
+    for depth in depth_values:
+        model = DecisionTreeClassifier(max_depth=depth, random_state=42)
+        scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
+
+        mean_score = np.mean(scores)
+        std_score = np.std(scores)
+
+        results.append((depth, mean_score, std_score))
+
+        print(f"max_depth = {depth}")
+        print(f"Mean Accuracy = {mean_score:.4f}")
+        print(f"Std Dev (Variance) = {std_score:.4f}")
+        print("-"*30)
+
+    best_depth = max(results, key=lambda x: x[1])[0]
+
+    print(f"Best max_depth ({name}) = {best_depth}")
+
+for dataset_name, (X, y) in datasets.items():
+    print("\n" + "="*60)
+    print(f"DATASET: {dataset_name}")
+    print("="*60)
+
+    print("\nLOOCV Results")
+    loo = LeaveOneOut()
+    evaluate_cv(X, y, loo, "LOOCV")
+
+    print("\n10-Fold CV Results")
+    kf = KFold(n_splits=10, shuffle=True, random_state=42)
+    evaluate_cv(X, y, kf, "10-Fold CV")
+
+    print("\nStratified 10-Fold CV Results")
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+    evaluate_cv(X, y, skf, "Stratified 10-Fold CV")
